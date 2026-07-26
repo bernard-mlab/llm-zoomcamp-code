@@ -1,0 +1,1 @@
+"""eval — offline retrieval and RAG evaluation."""
