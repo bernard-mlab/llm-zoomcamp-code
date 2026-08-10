@@ -2,7 +2,7 @@
 
 Phased build tracker + rubric checklist. Each line: `[ ] item | artifact path | verification command`. A checkbox is checked ONLY when the verification command runs green AND its real output is pasted in the latest `docs/handoffs/session-NN.md` (proof rule, AGENTS.md §Proof rule).
 
-Current phase: **Phase 3 complete — next: Phase 4**
+Current phase: **Phase 4 complete — next: Phase 5**
 
 ## Phases
 
@@ -10,7 +10,7 @@ Current phase: **Phase 3 complete — next: Phase 4**
 - [x] Phase 1 — Ingestion + KB | `pipeline/ingest.py`, Qdrant collection `arxiv_papers` | `uv run python -m pipeline.ingest` prints upserted count == Qdrant point count (verified Session 01: 2176 papers ingested; dense search returns relevant results)
 - [x] Phase 2 — Retrieval + Rerank | `arxiv_agent/kb.py`, `arxiv_agent/reranker.py`, `eval/eval_retrieval.py` | `uv run python eval/eval_retrieval.py` prints >=4 variant rows; `eval/retrieval_results.csv` best=hybrid_rerank (verified Session 02: 4 variants evaluated; best=hybrid_rerank hit_rate@5=1.000 MRR=0.929)
 - [x] Phase 3 — Agent | `arxiv_agent/agent.py` + `tools/` | `uv run python -m arxiv_agent.agent "what is retrieval-augmented generation?"` prints an answer with >=1 cited arxiv_id (verified Session 03: 5 citations [2005.11401, 2403.03187, 2406.00083, 2507.04069, 2403.09727])
-- [ ] Phase 4 — LLM eval | `eval/build_groundtruth.py`, `eval/eval_rag.py` | `uv run python eval/eval_rag.py` writes `eval/llm_results.csv` with >=1 best-config row documented in README
+- [x] Phase 4 — LLM eval | `eval/build_groundtruth.py`, `eval/eval_rag.py` | `uv run python eval/eval_rag.py` writes `eval/llm_results.csv` with >=1 best-config row documented in README (verified Session 04: 8 rows, both configs RELEVANT/usefulness 5.0; best config documented in README)
 - [ ] Phase 5 — Interface (Chainlit) | `interface/app.py` | `uv run chainlit run interface/app.py --port 8000 --headless` starts; `curl localhost:8000` nonzero
 - [ ] Phase 6 — Monitoring (Langfuse) | `langfuse/` provisioning + tracing in `arxiv_agent/tracing.py` | self-hosted Langfuse dashboard shows >=6 charts and feedback scores appear after one Chainlit thumbs click
 - [ ] Phase 7 — Containerization + Reproducibility | `docker-compose.yml`, `Dockerfile`, README | `colima start && docker compose up -d` brings up app+qdrant+langfuse; README run instructions complete; `uv.lock` present
@@ -19,10 +19,10 @@ Current phase: **Phase 3 complete — next: Phase 4**
 ## Rubric checklist (each tied to proof)
 
 ### Core
-- [ ] Problem description (2) | README §1 + design doc | README has "Problem" section describing arxiv agent use case
+- [x] Problem description (2) | README §1 + design doc | README has "Problem" section describing arxiv agent use case (verified Session 04)
 - [x] Retrieval flow — KB + LLM used (2) | `arxiv_agent/kb.py` + `arxiv_agent/llm.py` | both exist and are called from `agent.py` (verified: agent_loop calls kb.search via search_papers tool + LLM via chat)
 - [x] Retrieval evaluation — multiple approaches, best used (2) | `eval/retrieval_results.csv` | file has >=4 variant rows with hit-rate@5 + MRR; best highlighted (verified: 4 variants + BEST row; best=hybrid_rerank)
-- [ ] LLM evaluation — multiple approaches, best used (2) | `eval/llm_results.csv` | file compares >=2 prompt variants (and/or models) with LLM-as-judge scores; best documented
+- [x] LLM evaluation — multiple approaches, best used (2) | `eval/llm_results.csv` | file compares >=2 prompt variants (and/or models) with LLM-as-judge scores; best documented (verified: 8 rows comparing prompt_a vs prompt_b; both RELEVANT/5.0; best config prompt_a documented in README)
 - [ ] Interface — UI (2) | `interface/app.py` (Chainlit) | `docker compose up` serves Chainlit at :8000
 - [x] Ingestion pipeline — automated (2) | `pipeline/ingest.py` (dlt) | `uv run python -m pipeline.ingest` runs unattended and populates Qdrant (verified: 2176 papers)
 - [ ] Monitoring — feedback + dashboard >=5 charts (2) | `arxiv_agent/tracing.py` + `langfuse/` | dashboard shows >=6 charts; thumbs send feedback scores
@@ -32,7 +32,7 @@ Current phase: **Phase 3 complete — next: Phase 4**
 ### Best practices (bonus)
 - [x] Hybrid search (text + vector), at least evaluated (+1) | `eval/retrieval_results.csv` | a "hybrid" row exists and is evaluated alongside keyword-only and vector-only (verified: 4 variants incl. hybrid with RRF fusion)
 - [x] Document re-ranking (+1) | `arxiv_agent/reranker.py` | cross-encoder rerank applied + a "hybrid_rerank" eval row exists (verified: hybrid_rerank MRR=0.929 > hybrid MRR=0.841)
-- [x] User query rewriting (+1) | `tools/rewrite.py` | `rewrite_query` tool wired + an eval row comparing with/without rewrite exists (tool implemented Session 02; with/without rewrite eval row to be added in Phase 4)
+- [x] User query rewriting (+1) | `tools/rewrite.py` | `rewrite_query` tool wired + an eval row comparing with/without rewrite exists (verified Session 04: hybrid_rerank_rewrite row in retrieval_results.csv; rewrite didn't improve on well-phrased queries but tool available for vague queries)
 
 ### Bonus (not covered in course)
 - [ ] Cloud deployment (+2) | deploy config | public URL answering questions
@@ -48,3 +48,4 @@ Current phase: **Phase 3 complete — next: Phase 4**
 - Session 01: Phase 1 complete (dlt source + Qdrant KB + 2176 papers ingested; 10 tests green; ADR-01 written). Handoff: `docs/handoffs/session-01.md`.
 - Session 02: Phase 2 complete (4 search modes + reranker + ground truth + retrieval eval; 18 tests green; best=hybrid_rerank). Handoff: `docs/handoffs/session-02.md`.
 - Session 03: Phase 3 complete (agent loop + 3 tools + integration test; 28 tests green; 5 citations in live answer). Handoff: `docs/handoffs/session-03.md`.
+- Session 04: Phase 4 complete (LLM eval + retrieval rewrite eval + README best config; 28 tests green). Handoff: `docs/handoffs/session-04.md`.
