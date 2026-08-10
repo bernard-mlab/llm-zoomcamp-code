@@ -7,7 +7,7 @@ Current phase: **Phase 1 — Ingestion + KB**
 ## Phases
 
 - [x] Phase 0 — Scaffold | repo skeleton + design + plan + guardrails | `test -f pyproject.toml && test -f AGENTS.md && test -f PROGRESS.md`
-- [ ] Phase 1 — Ingestion + KB | `pipeline/ingest.py`, Qdrant collection `arxiv_papers` | `uv run python -m pipeline.ingest` prints upserted count == Qdrant point count
+- [x] Phase 1 — Ingestion + KB | `pipeline/ingest.py`, Qdrant collection `arxiv_papers` | `uv run python -m pipeline.ingest` prints upserted count == Qdrant point count (verified Session 01: 2176 papers ingested; dense search returns relevant results)
 - [ ] Phase 2 — Retrieval + Rerank | `arxiv_agent/kb.py`, `arxiv_agent/reranker.py`, `eval/eval_retrieval.py` | `uv run python eval/eval_retrieval.py` prints >=4 variant rows; `eval/retrieval_results.csv` best=hybrid_rerank
 - [ ] Phase 3 — Agent | `arxiv_agent/agent.py` + `tools/` | `uv run python -m arxiv_agent.agent "what is retrieval-augmented generation?"` prints an answer with >=1 cited arxiv_id
 - [ ] Phase 4 — LLM eval | `eval/build_groundtruth.py`, `eval/eval_rag.py` | `uv run python eval/eval_rag.py` writes `eval/llm_results.csv` with >=1 best-config row documented in README
@@ -24,7 +24,7 @@ Current phase: **Phase 1 — Ingestion + KB**
 - [ ] Retrieval evaluation — multiple approaches, best used (2) | `eval/retrieval_results.csv` | file has >=4 variant rows with hit-rate@5 + MRR; best highlighted
 - [ ] LLM evaluation — multiple approaches, best used (2) | `eval/llm_results.csv` | file compares >=2 prompt variants (and/or models) with LLM-as-judge scores; best documented
 - [ ] Interface — UI (2) | `interface/app.py` (Chainlit) | `docker compose up` serves Chainlit at :8000
-- [ ] Ingestion pipeline — automated (2) | `pipeline/ingest.py` (dlt) | `uv run python -m pipeline.ingest` runs unattended and populates Qdrant
+- [x] Ingestion pipeline — automated (2) | `pipeline/ingest.py` (dlt) | `uv run python -m pipeline.ingest` runs unattended and populates Qdrant (verified: 2176 papers)
 - [ ] Monitoring — feedback + dashboard >=5 charts (2) | `arxiv_agent/tracing.py` + `langfuse/` | dashboard shows >=6 charts; thumbs send feedback scores
 - [ ] Containerization — everything in docker-compose (2) | `docker-compose.yml` | `docker compose config` valid; app+qdrant+langfuse(+deps) all defined
 - [ ] Reproducibility (2) | README + `uv.lock` + `.env.example` | README run steps complete; `uv.lock` present; `.env.example` lists all keys
@@ -45,4 +45,4 @@ Current phase: **Phase 1 — Ingestion + KB**
 ## Session log
 
 - Session 00: scaffolded repo, spec, AGENTS, PROGRESS, plan. Handoff: `docs/handoffs/session-00.md`. (No prior state; clean machine.)
-- Session 01: reality check done; ADR-01 written (Hy3 native tool-calling confirmed); colima + Qdrant started; Phase 1 begun (subagent-driven).
+- Session 01: Phase 1 complete (dlt source + Qdrant KB + 2176 papers ingested; 10 tests green; ADR-01 written). Handoff: `docs/handoffs/session-01.md`.
