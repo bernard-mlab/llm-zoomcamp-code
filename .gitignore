@@ -16,3 +16,6 @@ files/
 data/
 eval/*.csv
 !eval/.gitkeep
+!eval/groundtruth.csv
+!eval/retrieval_results.csv
+!eval/llm_results.csv
