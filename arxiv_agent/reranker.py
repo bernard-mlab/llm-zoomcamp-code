@@ -1,5 +1,34 @@
 """Cross-encoder reranker (fastembed Xenova/ms-marco-MiniLM-L-6-v2). Phase 2."""
 from __future__ import annotations
 
-# rerank(query, docs, top_k) -> top_k docs by cross-encoder score.
-# Used by kb.search(mode="hybrid_rerank"). See spec §4.
+from arxiv_agent.config import settings
+
+
+class Reranker:
+    def __init__(self, model_name: str | None = None):
+        self._model_name = model_name or settings.rerank_model
+        self._model = None
+
+    def _ensure_model(self):
+        if self._model is None:
+            from fastembed import TextEmbedding
+
+            self._model = TextEmbedding(model_name=self._model_name)
+
+    def rerank(self, query: str, documents: list[dict], top_k: int = 5) -> list[dict]:
+        if not documents:
+            return []
+
+        self._ensure_model()
+
+        pairs = [f"{query} {doc.get('title', '')} {doc.get('summary', '')}" for doc in documents]
+        scores = list(self._model.embed(pairs))
+        scored = list(zip(documents, scores, strict=True))
+        scored.sort(key=lambda x: float(x[1]), reverse=True)
+
+        results = []
+        for doc, score in scored[:top_k]:
+            result = dict(doc)
+            result["rerank_score"] = float(score)
+            results.append(result)
+        return results

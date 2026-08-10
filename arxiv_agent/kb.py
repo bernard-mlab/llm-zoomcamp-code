@@ -14,7 +14,11 @@ from collections.abc import Iterable
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
     Distance,
+    Fusion,
+    FusionQuery,
     PointStruct,
+    Prefetch,
+    QueryResponse,
     SparseIndexParams,
     SparseVector,
     SparseVectorParams,
@@ -26,6 +30,8 @@ NAMESPACE_UUID = uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
 DENSE_VECTOR_NAME = "dense"
 SPARSE_VECTOR_NAME = "text-sparse"
 DEFAULT_DENSE_DIM = 384
+
+VALID_MODES = {"keyword", "vector", "hybrid", "hybrid_rerank"}
 
 
 def paper_text(paper: dict) -> str:
@@ -105,3 +111,96 @@ def upsert_papers(
         total += len(points)
 
     return total
+
+def _query_to_dense_vec(query: str, dense_model) -> list[float]:
+    return list(dense_model.embed([query]))[0].tolist()
+
+
+def _query_to_sparse_vec(query: str, sparse_model) -> SparseVector:
+    sv = list(sparse_model.embed([query]))[0]
+    return SparseVector(
+        indices=sv.indices.tolist() if hasattr(sv.indices, "tolist") else list(sv.indices),
+        values=sv.values.tolist() if hasattr(sv.values, "tolist") else list(sv.values),
+    )
+
+
+def _points_to_dicts(response, limit: int) -> list[dict]:
+    results = []
+    for i, point in enumerate(response.points[:limit]):
+        payload = point.payload or {}
+        results.append(
+            {
+                "arxiv_id": payload.get("arxiv_id", ""),
+                "title": payload.get("title", ""),
+                "authors": payload.get("authors", []),
+                "summary": payload.get("summary", ""),
+                "published": payload.get("published", ""),
+                "categories": payload.get("categories", []),
+                "primary_category": payload.get("primary_category", ""),
+                "score": point.score,
+            }
+        )
+    return results
+
+
+def search(
+    client: QdrantClient,
+    collection: str,
+    query: str,
+    mode: str = "hybrid",
+    dense_model=None,
+    sparse_model=None,
+    limit: int = 5,
+) -> list[dict]:
+    if mode not in VALID_MODES:
+        raise ValueError(f"mode must be one of {VALID_MODES}, got {mode!r}")
+
+    if mode == "keyword":
+        sv = _query_to_sparse_vec(query, sparse_model)
+        response = client.query_points(
+            collection_name=collection,
+            query=sv,
+            using=SPARSE_VECTOR_NAME,
+            limit=limit,
+            with_payload=True,
+            with_vectors=False,
+        )
+        return _points_to_dicts(response, limit)
+
+    if mode == "vector":
+        dv = _query_to_dense_vec(query, dense_model)
+        response = client.query_points(
+            collection_name=collection,
+            query=dv,
+            using=DENSE_VECTOR_NAME,
+            limit=limit,
+            with_payload=True,
+            with_vectors=False,
+        )
+        return _points_to_dicts(response, limit)
+
+    if mode in ("hybrid", "hybrid_rerank"):
+        fetch_limit = limit * 4 if mode == "hybrid_rerank" else limit
+        dv = _query_to_dense_vec(query, dense_model)
+        sv = _query_to_sparse_vec(query, sparse_model)
+
+        response = client.query_points(
+            collection_name=collection,
+            prefetch=[
+                Prefetch(query=dv, using=DENSE_VECTOR_NAME, limit=fetch_limit),
+                Prefetch(query=sv, using=SPARSE_VECTOR_NAME, limit=fetch_limit),
+            ],
+            query=FusionQuery(fusion=Fusion.RRF),
+            limit=fetch_limit if mode == "hybrid_rerank" else limit,
+            with_payload=True,
+            with_vectors=False,
+        )
+        results = _points_to_dicts(response, fetch_limit if mode == "hybrid_rerank" else limit)
+
+        if mode == "hybrid":
+            return results
+
+        from arxiv_agent.reranker import Reranker
+
+        reranker = Reranker()
+        return reranker.rerank(query, results, top_k=limit)
