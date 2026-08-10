@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>arXiv Query: search_query=cat:cs.AI</title>
+  <id>http://arxiv.org/api/query</id>
+  <updated>2024-01-01T00:00:00Z</updated>
+  <entry>
+    <id>http://arxiv.org/abs/2401.00001v1</id>
+    <title>Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks</title>
+    <summary>A summary about retrieval-augmented generation approaches.</summary>
+    <published>2024-01-01T00:00:00Z</published>
+    <author>
+      <name>Jane Doe</name>
+    </author>
+    <category term="cs.AI"/>
+    <category term="cs.CL"/>
+    <primary_category xmlns="http://arxiv.org/schemas/atom" term="cs.AI"/>
+  </entry>
+</feed>
