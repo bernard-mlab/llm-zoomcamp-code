@@ -2,7 +2,7 @@
 
 Phased build tracker + rubric checklist. Each line: `[ ] item | artifact path | verification command`. A checkbox is checked ONLY when the verification command runs green AND its real output is pasted in the latest `docs/handoffs/session-NN.md` (proof rule, AGENTS.md §Proof rule).
 
-Current phase: **Phase 0 — Scaffold**
+Current phase: **Phase 1 — Ingestion + KB**
 
 ## Phases
 
@@ -40,8 +40,9 @@ Current phase: **Phase 0 — Scaffold**
 
 ## Capability probe (seen at every session touching the agent)
 
-- [ ] Hy3 tool-call capability | `docs/decisions/ADR-01.md` | `uv run python -m arxiv_agent.capability_probe` prints `tool_calling=yes|no|partial`
+- [x] Hy3 tool-call capability | `docs/decisions/ADR-01-hy3-tool-calling.md` | `uv run python -m arxiv_agent.capability_probe` prints `tool_calling=yes` (verified Session 01: native function-calling confirmed)
 
 ## Session log
 
 - Session 00: scaffolded repo, spec, AGENTS, PROGRESS, plan. Handoff: `docs/handoffs/session-00.md`. (No prior state; clean machine.)
+- Session 01: reality check done; ADR-01 written (Hy3 native tool-calling confirmed); colima + Qdrant started; Phase 1 begun (subagent-driven).
