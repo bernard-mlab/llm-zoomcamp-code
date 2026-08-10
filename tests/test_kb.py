@@ -19,7 +19,7 @@ class FakeDenseModel:
         for i, t in enumerate(texts):
             vec = np.zeros(DENSE_DIM, dtype=np.float32)
             vec[0] = len(t) / 100.0
-            vec[1] = hash(t) % 10 / 10.0
+            vec[1] = (sum(ord(c) for c in t) % 10) / 10.0
             yield vec
 
 
