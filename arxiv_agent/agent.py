@@ -2,15 +2,19 @@
 
 Phase 3. Uses native function-calling (ADR-01 confirmed Hy3 supports it).
 See spec §5 and AGENTS.md (Hy3 capability rule).
+
+Phase 6: adds Langfuse tracing spans per iteration + tool call.
 """
 from __future__ import annotations
 
 import json
 import sys
+import time
 
 from arxiv_agent.config import settings
 from arxiv_agent.llm import chat
 from arxiv_agent.tools import TOOL_DEFS, TOOL_REGISTRY
+from arxiv_agent.tracing import create_trace, span, flush
 
 INSTRUCTIONS = """You're an arXiv research assistant.
 You help researchers find and understand papers from arXiv CS.AI/CL/LG.
@@ -32,7 +36,7 @@ perform more searches with different keywords if the initial results are incompl
 """.strip()
 
 
-def _make_call(call) -> dict:
+def _make_call(call, trace_id=None) -> dict:
     name = call.function.name
     args = json.loads(call.function.arguments)
     fn = TOOL_REGISTRY.get(name)
@@ -40,7 +44,12 @@ def _make_call(call) -> dict:
         result = {"error": f"Unknown tool: {name}"}
     else:
         try:
-            result = fn(**args)
+            t0 = time.time()
+            with span(trace_id, f"tool:{name}", input=args) as s:
+                result = fn(**args)
+                if s is not None:
+                    s.end(output=result)
+            took = time.time() - t0
         except Exception as e:
             result = {"error": f"{type(e).__name__}: {e}"}
     return {
@@ -50,15 +59,34 @@ def _make_call(call) -> dict:
     }
 
 
+_last_trace_id: str | None = None
+
+
+def get_last_trace_id() -> str | None:
+    return _last_trace_id
+
+
 def agent_loop(question: str, model: str | None = None, max_iterations: int = 6) -> str:
+    global _last_trace_id
     messages = [
         {"role": "system", "content": INSTRUCTIONS},
         {"role": "user", "content": question},
     ]
     model = model or settings.llm_model
 
+    trace_id = create_trace(
+        name=f"agent: {question[:80]}",
+        metadata={"question": question, "model": model},
+    )
+    _last_trace_id = trace_id
+
     for iteration in range(1, max_iterations + 1):
-        response = chat(messages, model=model, tools=TOOL_DEFS)
+        t0 = time.time()
+        with span(trace_id, f"iteration-{iteration}", input={"messages": len(messages)}) as s:
+            response = chat(messages, model=model, tools=TOOL_DEFS)
+            took = time.time() - t0
+            if s is not None:
+                s.end(output={"took": took}, metadata={"iteration": iteration})
 
         if not response.choices:
             break
@@ -68,7 +96,11 @@ def agent_loop(question: str, model: str | None = None, max_iterations: int = 6)
         tool_calls = getattr(assistant_msg, "tool_calls", None)
 
         if not tool_calls:
-            return assistant_msg.content or ""
+            answer = assistant_msg.content or ""
+            with span(trace_id, "final_answer", input=question, output=answer):
+                pass
+            flush()
+            return answer
 
         reply = {"role": "assistant", "content": assistant_msg.content or ""}
         reply["tool_calls"] = [
@@ -85,9 +117,10 @@ def agent_loop(question: str, model: str | None = None, max_iterations: int = 6)
         messages.append(reply)
 
         for tc in tool_calls:
-            call_output = _make_call(tc)
+            call_output = _make_call(tc, trace_id=trace_id)
             messages.append(call_output)
 
+    flush()
     return "I could not find enough information to answer within the iteration budget."
 
 

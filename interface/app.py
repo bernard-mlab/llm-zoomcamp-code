@@ -1,16 +1,17 @@
 """Chainlit chat UI for the arxiv agent.
 
 - @cl.on_message -> arxiv_agent.agent_loop -> render answer with cited arxiv_ids
-- Thumbs up/down feedback -> stub for Phase 6 Langfuse
-- Sidebar shows last retrieval (mode, #results)
+- Thumbs up/down feedback -> Langfuse score (Phase 6)
+- Sidebar shows cited papers
 """
 from __future__ import annotations
 
 import re
 
 import chainlit as cl
-from arxiv_agent.agent import agent_loop
+from arxiv_agent.agent import agent_loop, get_last_trace_id
 from arxiv_agent.tools.fetch import fetch_arxiv
+from arxiv_agent.tracing import score, flush
 
 ARXIV_ID_PATTERN = re.compile(r"arxiv:(\d{4}\.\d{4,5})")
 
@@ -67,4 +68,10 @@ async def main(message: cl.Message):
         ],
     ).send()
 
-    cl.user_session.set("last_feedback", fb.get("value") if fb else None)
+    feedback_value = fb.get("value") if fb else None
+    if feedback_value:
+        trace_id = get_last_trace_id()
+        if trace_id:
+            score(trace_id, "user_feedback", 1.0 if feedback_value == "up" else -1.0, comment=feedback_value)
+            flush()
+            cl.user_session.set("last_feedback", feedback_value)

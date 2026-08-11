@@ -1,0 +1,35 @@
+{
+  "name": "arXiv Research Assistant Dashboard",
+  "charts": [
+    {
+      "name": "Avg response time per turn",
+      "description": "Average wall-clock time from user question to final answer, per turn.",
+      "query": "AVG of span duration where name starts with 'iteration-'"
+    },
+    {
+      "name": "Token usage & cost per model",
+      "description": "Total tokens and cost grouped by model (Hy3).",
+      "query": "SUM of usage details from LLM generations grouped by model"
+    },
+    {
+      "name": "Tool call counts per turn",
+      "description": "How many tool calls (search_papers, fetch_arxiv, rewrite_query) per turn.",
+      "query": "COUNT observations where name starts with 'tool:'"
+    },
+    {
+      "name": "Relevance distribution (LLM-judge)",
+      "description": "Distribution of LLM-as-judge relevance scores (RELEVANT/PARTLY/NON) from eval runs.",
+      "query": "COUNT scores where name='relevance'"
+    },
+    {
+      "name": "User feedback ratio over time",
+      "description": "Ratio of thumbs-up to thumbs-down over time.",
+      "query": "SUM of scores where name='user_feedback'"
+    },
+    {
+      "name": "Hybrid-search rerank win-rate",
+      "description": "Number of times cross-encoder reranking changed the top-1 result compared to raw hybrid fusion.",
+      "query": "COUNT observations where name='tool:search_papers' and metadata.mode='hybrid_rerank' / COUNT observations where metadata.mode='hybrid'"
+    }
+  ]
+}
