@@ -2,7 +2,7 @@
 
 Phased build tracker + rubric checklist. Each line: `[ ] item | artifact path | verification command`. A checkbox is checked ONLY when the verification command runs green AND its real output is pasted in the latest `docs/handoffs/session-NN.md` (proof rule, AGENTS.md §Proof rule).
 
-Current phase: **Phase 4 complete — next: Phase 5**
+Current phase: **Phase 5 complete — next: Phase 6**
 
 ## Phases
 
@@ -11,7 +11,7 @@ Current phase: **Phase 4 complete — next: Phase 5**
 - [x] Phase 2 — Retrieval + Rerank | `arxiv_agent/kb.py`, `arxiv_agent/reranker.py`, `eval/eval_retrieval.py` | `uv run python eval/eval_retrieval.py` prints >=4 variant rows; `eval/retrieval_results.csv` best=hybrid_rerank (verified Session 02: 4 variants evaluated; best=hybrid_rerank hit_rate@5=1.000 MRR=0.929)
 - [x] Phase 3 — Agent | `arxiv_agent/agent.py` + `tools/` | `uv run python -m arxiv_agent.agent "what is retrieval-augmented generation?"` prints an answer with >=1 cited arxiv_id (verified Session 03: 5 citations [2005.11401, 2403.03187, 2406.00083, 2507.04069, 2403.09727])
 - [x] Phase 4 — LLM eval | `eval/build_groundtruth.py`, `eval/eval_rag.py` | `uv run python eval/eval_rag.py` writes `eval/llm_results.csv` with >=1 best-config row documented in README (verified Session 04: 8 rows, both configs RELEVANT/usefulness 5.0; best config documented in README)
-- [ ] Phase 5 — Interface (Chainlit) | `interface/app.py` | `uv run chainlit run interface/app.py --port 8000 --headless` starts; `curl localhost:8000` nonzero
+- [x] Phase 5 — Interface (Chainlit) | `interface/app.py` | `uv run chainlit run interface/app.py --port 8000 --headless` starts; `curl localhost:8000` returns 200 (verified Session 05: HTTP 200, chat UI with agent_loop + arxiv_id citations + thumbs feedback)
 - [ ] Phase 6 — Monitoring (Langfuse) | `langfuse/` provisioning + tracing in `arxiv_agent/tracing.py` | self-hosted Langfuse dashboard shows >=6 charts and feedback scores appear after one Chainlit thumbs click
 - [ ] Phase 7 — Containerization + Reproducibility | `docker-compose.yml`, `Dockerfile`, README | `colima start && docker compose up -d` brings up app+qdrant+langfuse; README run instructions complete; `uv.lock` present
 - [ ] Phase 8 (bonus) — Cloud deploy | deploy config | public URL answers a question with citations
@@ -23,7 +23,7 @@ Current phase: **Phase 4 complete — next: Phase 5**
 - [x] Retrieval flow — KB + LLM used (2) | `arxiv_agent/kb.py` + `arxiv_agent/llm.py` | both exist and are called from `agent.py` (verified: agent_loop calls kb.search via search_papers tool + LLM via chat)
 - [x] Retrieval evaluation — multiple approaches, best used (2) | `eval/retrieval_results.csv` | file has >=4 variant rows with hit-rate@5 + MRR; best highlighted (verified: 4 variants + BEST row; best=hybrid_rerank)
 - [x] LLM evaluation — multiple approaches, best used (2) | `eval/llm_results.csv` | file compares >=2 prompt variants (and/or models) with LLM-as-judge scores; best documented (verified: 8 rows comparing prompt_a vs prompt_b; both RELEVANT/5.0; best config prompt_a documented in README)
-- [ ] Interface — UI (2) | `interface/app.py` (Chainlit) | `docker compose up` serves Chainlit at :8000
+- [x] Interface — UI (2) | `interface/app.py` (Chainlit) | `docker compose up` serves Chainlit at :8000 (verified Session 05: chainlit run serves HTTP 200 with chat + citations + thumbs)
 - [x] Ingestion pipeline — automated (2) | `pipeline/ingest.py` (dlt) | `uv run python -m pipeline.ingest` runs unattended and populates Qdrant (verified: 2176 papers)
 - [ ] Monitoring — feedback + dashboard >=5 charts (2) | `arxiv_agent/tracing.py` + `langfuse/` | dashboard shows >=6 charts; thumbs send feedback scores
 - [ ] Containerization — everything in docker-compose (2) | `docker-compose.yml` | `docker compose config` valid; app+qdrant+langfuse(+deps) all defined
@@ -49,3 +49,4 @@ Current phase: **Phase 4 complete — next: Phase 5**
 - Session 02: Phase 2 complete (4 search modes + reranker + ground truth + retrieval eval; 18 tests green; best=hybrid_rerank). Handoff: `docs/handoffs/session-02.md`.
 - Session 03: Phase 3 complete (agent loop + 3 tools + integration test; 28 tests green; 5 citations in live answer). Handoff: `docs/handoffs/session-03.md`.
 - Session 04: Phase 4 complete (LLM eval + retrieval rewrite eval + README best config; 28 tests green). Handoff: `docs/handoffs/session-04.md`.
+- Session 05: Phase 5 complete (Chainlit UI + agent integration + thumbs feedback; 32 tests green). Handoff: `docs/handoffs/session-05.md`.
