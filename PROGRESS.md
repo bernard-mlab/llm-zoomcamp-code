@@ -2,7 +2,7 @@
 
 Phased build tracker + rubric checklist. Each line: `[ ] item | artifact path | verification command`. A checkbox is checked ONLY when the verification command runs green AND its real output is pasted in the latest `docs/handoffs/session-NN.md` (proof rule, AGENTS.md §Proof rule).
 
-Current phase: **Phase 6 complete — next: Phase 7**
+Current phase: **Phase 7 in progress — BLOCKED by colima VM corruption (see Session 07 handoff); rebuild pending in a future session**
 
 ## Phases
 
@@ -13,7 +13,7 @@ Current phase: **Phase 6 complete — next: Phase 7**
 - [x] Phase 4 — LLM eval | `eval/build_groundtruth.py`, `eval/eval_rag.py` | `uv run python eval/eval_rag.py` writes `eval/llm_results.csv` with >=1 best-config row documented in README (verified Session 04: 8 rows, both configs RELEVANT/usefulness 5.0; best config documented in README)
 - [x] Phase 5 — Interface (Chainlit) | `interface/app.py` | `uv run chainlit run interface/app.py --port 8000 --headless` starts; `curl localhost:8000` returns 200 (verified Session 05: HTTP 200, chat UI with agent_loop + arxiv_id citations + thumbs feedback)
 - [x] Phase 6 — Monitoring (Langfuse) | `langfuse/` provisioning + tracing in `arxiv_agent/tracing.py` | self-hosted Langfuse dashboard shows >=6 charts and feedback scores appear after one Chainlit thumbs click (verified Session 06: 7 traces + 17 spans in latest agent run; dashboard.json with 6 charts; Langfuse v2 healthy at :3000)
-- [ ] Phase 7 — Containerization + Reproducibility | `docker-compose.yml`, `Dockerfile`, README | `colima start && docker compose up -d` brings up app+qdrant+langfuse; README run instructions complete; `uv.lock` present
+- [ ] Phase 7 — Containerization + Reproducibility | `docker-compose.yml`, `Dockerfile`, README | `colima start && docker compose up -d` brings up app+qdrant+langfuse; README run instructions complete; `uv.lock` present — **BLOCKED**: colima VM corrupted + deleted Session 07; Docker stack must be re-built and re-verified from a fresh VM before this can be checked
 - [ ] Phase 8 (bonus) — Cloud deploy | deploy config | public URL answers a question with citations
 
 ## Rubric checklist (each tied to proof)
@@ -51,3 +51,4 @@ Current phase: **Phase 6 complete — next: Phase 7**
 - Session 04: Phase 4 complete (LLM eval + retrieval rewrite eval + README best config; 28 tests green). Handoff: `docs/handoffs/session-04.md`.
 - Session 05: Phase 5 complete (Chainlit UI + agent integration + thumbs feedback; 32 tests green). Handoff: `docs/handoffs/session-05.md`.
 - Session 06: Phase 6 complete (Langfuse v2 self-hosted + tracing wired into agent + dashboard.json + 6 charts; 32 tests green). Handoff: `docs/handoffs/session-06.md`.
+- Session 07: Phase 7 started — reconciled Qdrant (image→v1.18.0, fresh reingest 2954 pts), finalized README/.dockerignore/pyproject, but the host disk filled (99%), corrupting the colima VM beyond repair → VM deleted per user (n8n not needed); Docker stack must be rebuilt next session. Handoff: `docs/handoffs/session-07.md`. (Changes uncommitted; tests 32 green on host.)

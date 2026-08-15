@@ -7,7 +7,7 @@ ENV PATH="/app/.venv/bin:$PATH" \
     UV_PROJECT_ENVIRONMENT=/app/.venv \
     UV_LINK_MODE=copy
 
-COPY pyproject.toml uv.lock ./
+COPY pyproject.toml uv.lock README.md ./
 RUN uv sync --locked --no-dev
 
 COPY . .

@@ -19,6 +19,8 @@ ARXIV_NS = "{http://arxiv.org/schemas/atom}"
 ARXIV_API_URL = "http://export.arxiv.org/api/query"
 BATCH_SIZE = 100
 RATE_LIMIT_SECONDS = 3
+RETRY_ATTEMPTS = 5
+RETRY_BASE_DELAY = 5.0
 
 
 def parse_atom(xml_string: str) -> list[dict]:
@@ -70,6 +72,20 @@ def _build_search_query(categories: tuple[str, ...]) -> str:
     return " OR ".join(f"cat:{c}" for c in categories)
 
 
+def _get_with_retry(params: dict) -> requests.Response:
+    last_exc: requests.RequestException | None = None
+    for attempt in range(RETRY_ATTEMPTS):
+        try:
+            response = requests.get(ARXIV_API_URL, params=params, timeout=60)
+            response.raise_for_status()
+            return response
+        except requests.RequestException as exc:
+            last_exc = exc
+            if attempt < RETRY_ATTEMPTS - 1:
+                time.sleep(RETRY_BASE_DELAY * (2**attempt))
+    raise last_exc  # type: ignore[misc]
+
+
 @dlt.resource(primary_key="arxiv_id")
 def fetch_papers(
     max_results: int = 3000,
@@ -91,8 +107,7 @@ def fetch_papers(
             "start": start,
             "max_results": batch_limit,
         }
-        response = requests.get(ARXIV_API_URL, params=params)
-        response.raise_for_status()
+        response = _get_with_retry(params)
 
         papers = parse_atom(response.text)
         if not papers:

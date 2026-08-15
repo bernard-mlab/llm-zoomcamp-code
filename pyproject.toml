@@ -9,7 +9,7 @@ dependencies = [
     "python-dotenv>=1.0.1",
     "qdrant-client>=1.11.0",
     "fastembed>=0.3.4",
-    "dlt[parallel]>=1.4.0",
+    "dlt>=1.4.0",
     "requests>=2.32.3",
     "langfuse>=2.0,<3.0",
     "chainlit>=1.3.0",
@@ -17,11 +17,11 @@ dependencies = [
     "scikit-learn>=1.5.2",
     "tqdm>=4.66.5",
     "sentence-transformers>=5.7.0",
-    "bcrypt>=5.0.0",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
+    "bcrypt>=5.0.0",
     "ruff>=0.6.9",
     "pytest>=8.3.3",
     "jupyterlab>=4.2.5",
