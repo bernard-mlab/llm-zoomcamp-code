@@ -4,9 +4,31 @@ Self-hosted Langfuse v2 is running at `http://localhost:3000`.
 
 **Login**: `admin@arxiv-agent.local` / `adminadmin123!`
 **Project**: `arxiv-agent`
-**API keys** (already configured in `.env`):
-- `LANGFUSE_PUBLIC_KEY=pk-lf-c027cf3f3b7a6daa`
-- `LANGFUSE_SECRET_KEY=sk-lf-...`
+**API keys**: generated per-environment during provisioning (see below) and
+stored in `.env` as `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` — never
+committed, regenerate them on every fresh stack.
+
+## Provisioning a fresh instance
+
+**Normal path (grader, has a browser):** after `docker compose up -d
+langfuse-web`, open `http://localhost:3000/auth/sign-up`, sign up
+(`admin@arxiv-agent.local` / `adminadmin123!`), follow the onboarding wizard
+to create an organization + project, then go to Settings → API Keys to
+generate a key pair. Write it into `.env` as `LANGFUSE_PUBLIC_KEY` /
+`LANGFUSE_SECRET_KEY` and `docker compose restart app`.
+
+**Headless path (no browser, e.g. an agent session):** `POST /api/auth/signup`
+creates the first user but self-hosted v2 has no public API to create the
+org/project/API-key the way the UI wizard does. Insert them directly into
+the `postgres-langfuse` database instead: an `organizations` row, a
+`projects` row, `organization_memberships` + `project_memberships` rows (role
+`OWNER`), and an `api_keys` row. The API key's `hashed_secret_key` is a
+bcrypt hash (cost 11) of the secret key, and `fast_hashed_secret_key` is
+`sha256(secretKey + sha256(SALT).hexdigest())` — matching Langfuse's own
+`hashSecretKey`/`createShaHash` internals. `SALT` is the value set on the
+`langfuse-web` service in `docker-compose.yml`. Verify with
+`curl -u pk-lf-...:sk-lf-... http://localhost:3000/api/public/projects`
+before writing the keys into `.env`.
 
 ## Running
 
@@ -35,15 +57,5 @@ To view the dashboard, browse Langfuse at `http://localhost:3000`, log in with
 the credentials above, and open the Traces / Scores panels. Sample traces have
 already been ingested by running the agent end-to-end.
 
-## One-time setup
-
-If you start from a clean database, Langfuse v2 needs:
-1. First user signup via the web UI at `http://localhost:3000` (Sign up with
-   email + password — creates user only, no project).
-2. Create a project + API key through the UI (Settings → API Keys).
-3. Copy the keys into `.env` as `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY`.
-4. Restart the app: `docker-compose restart app`.
-
-For this setup the organization/project/api-key were inserted directly into
-the Postgres database (see `langfuse/provision.py` for the SQL) — useful when
-the web UI's NextAuth flow is hard to script.
+`langfuse/provision.py` automates step 1 (first-user signup) and prints the
+remaining manual steps; run it once after `docker compose up -d langfuse-web`.

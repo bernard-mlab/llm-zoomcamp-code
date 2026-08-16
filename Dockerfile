@@ -8,9 +8,10 @@ ENV PATH="/app/.venv/bin:$PATH" \
     UV_LINK_MODE=copy
 
 COPY pyproject.toml uv.lock README.md ./
-RUN uv sync --locked --no-dev
+RUN uv sync --locked --no-dev --no-install-project
 
 COPY . .
+RUN uv sync --locked --no-dev
 
 EXPOSE 8000
-CMD ["uv", "run", "chainlit", "run", "interface/app.py", "--port", "8000", "--host", "0.0.0.0", "--headless"]
+CMD ["uv", "run", "--locked", "--no-dev", "chainlit", "run", "interface/app.py", "--port", "8000", "--host", "0.0.0.0", "--headless"]

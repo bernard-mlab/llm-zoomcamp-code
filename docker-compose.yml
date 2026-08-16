@@ -1,7 +1,7 @@
 # arxiv-research-assistant — full stack (colima / docker compose)
-# Draft: qdrant + langfuse(self-hosted) + app(chainlit) + ingest(profile).
-# Verified end-to-end in Phase 7. Langfuse service shape follows the
-# official self-host compose; confirm image tags against Langfuse docs then.
+# qdrant + langfuse(self-hosted) + app(chainlit) + ingest(profile).
+# Verified end-to-end in Phase 7 (Session 08). Langfuse service shape follows
+# the official self-host compose.
 
 services:
   qdrant:
@@ -12,7 +12,9 @@ services:
     volumes:
       - qdrant_data:/qdrant/storage
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      # qdrant's image ships no curl/wget; CMD-SHELL defaults to /bin/sh
+      # (dash, no /dev/tcp support) so bash must be invoked explicitly.
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/6333 && printf 'GET /healthz HTTP/1.0\r\n\r\n' >&3 && grep -q 'healthz check passed' <&3"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -151,7 +153,7 @@ services:
     environment:
       QDRANT_URL: http://qdrant:6333
       LANGFUSE_HOST: http://langfuse-web:3000
-    command: ["uv", "run", "chainlit", "run", "interface/app.py", "--port", "8000", "--host", "0.0.0.0", "--headless"]
+    command: ["uv", "run", "--locked", "--no-dev", "chainlit", "run", "interface/app.py", "--port", "8000", "--host", "0.0.0.0", "--headless"]
 
   ingest:
     build:
@@ -165,7 +167,7 @@ services:
       - .env
     environment:
       QDRANT_URL: http://qdrant:6333
-    command: ["uv", "run", "python", "-m", "pipeline.ingest"]
+    command: ["uv", "run", "--locked", "--no-dev", "python", "-m", "pipeline.ingest"]
 
 volumes:
   qdrant_data:

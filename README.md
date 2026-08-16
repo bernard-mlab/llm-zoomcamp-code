@@ -33,6 +33,19 @@ sources, and exposes a chat interface with monitoring and evaluation.
 - **Containerization**: full docker-compose stack (app + qdrant + langfuse +
   deps), runs on colima.
 
+## Prerequisites
+
+| Requirement | Version / notes |
+|---|---|
+| macOS with a Docker runtime | [colima](https://github.com/abiosoft/colima) (used throughout this README) or Docker Desktop — either works, `docker compose` doesn't care which |
+| [`uv`](https://docs.astral.sh/uv/) | manages the Python 3.12 venv; installs Python 3.12 automatically if you don't have it |
+| Free disk space | **≥25GiB** before any `docker compose build`/`up` — colima's VM disk grows on the host disk and a full disk corrupts the VM (see Troubleshooting) |
+| An `Hy3`-compatible API key | via the `opencode-go` proxy — see `.env.example` |
+
+No other manual installs are required — `uv sync` pulls every Python
+dependency (including `sentence-transformers`/`torch` for the reranker and
+`fastembed` for embeddings) into a local `.venv`.
+
 ## Project structure
 
 ```
@@ -51,30 +64,45 @@ docs/                   spec, plan, handoffs, ADRs, PROGRESS tracker
 ## Quick start (macOS / colima)
 
 ```bash
-# 1. Start the Docker runtime
-colima start
+# 1. Start the Docker runtime (skip if using Docker Desktop instead)
+#    Keep >=25GiB free on the host disk before this - see Troubleshooting.
+colima start --cpu 4 --memory 6 --disk 80
 
-# 2. Configure environment (fill in OPENCODE_GO_API_KEY; Langfuse keys optional)
+# 2. Configure environment (fill in OPENCODE_GO_API_KEY; Langfuse keys added in step 6)
 cp .env.example .env
 
 # 3. Install dependencies (Python 3.12; uv manages the venv)
-uv sync
+uv sync --locked
+uv run pytest tests/ -v                # -> 32 passed
 
-# 4. Bring up the full stack (Qdrant + Langfuse + app), then check health
-docker-compose up -d --build
-curl -s http://localhost:8000        # Chainlit app  -> 200
-curl -s http://localhost:6333/healthz # Qdrant       -> healthz check passed
+# 4. Bring up Qdrant + Langfuse first (app needs Langfuse reachable to start)
+docker compose up -d qdrant langfuse-web
+curl -s http://localhost:6333/healthz  # -> healthz check passed
+curl -s -o /dev/null -w '%{http_code}\n' http://localhost:3000  # -> 200
 
 # 5. Populate the knowledge base (first run only; ~10-15 min)
 uv run python -m pipeline.ingest
 
-# 6. Open the chat UI
+# 6. Provision Langfuse (one-time): sign up at http://localhost:3000/auth/sign-up,
+#    create an org + project via the onboarding wizard, generate an API key
+#    under Settings -> API Keys, then add it to .env:
+#    LANGFUSE_PUBLIC_KEY=pk-lf-...
+#    LANGFUSE_SECRET_KEY=sk-lf-...
+#    See langfuse/README.md for a headless (no-browser) provisioning path.
+
+# 7. Build and start the app
+docker compose build app && docker compose up -d app
+curl -s -o /dev/null -w '%{http_code}\n' http://localhost:8000   # -> 200
+
+# 8. Open the chat UI
 open http://localhost:8000
 ```
 
-> **`docker compose` vs `docker-compose`**: this repo uses the legacy
-> `docker-compose` (hyphenated) command. If you have the compose v2 plugin,
-> the same commands work as `docker compose` — the compose file is unchanged.
+> **`docker compose` vs `docker-compose`**: the compose v2 plugin (`docker
+> compose`, no hyphen) is used above and is what ships with current Docker
+> Desktop / colima. The legacy standalone `docker-compose` binary works
+> identically against the same `docker-compose.yml` if that's what you have
+> installed.
 
 ## Evaluation
 
@@ -134,28 +162,59 @@ See `eval/llm_results.csv` and `eval/retrieval_results.csv` for full results.
 ## Langfuse monitoring (one-time setup)
 
 Self-hosted Langfuse v2 runs at `http://localhost:3000` (started as part of
-`docker-compose up -d`). The app emits a trace per agent turn with child spans
+`docker compose up -d`). The app emits a trace per agent turn with child spans
 per iteration, LLM call, and tool call; Chainlit thumbs clicks send
-`user_feedback` scores. See [`langfuse/README.md`](langfuse/README.md) for the
-login, the 6-chart dashboard, and one-time provisioning (project + API keys).
+`user_feedback` scores. Provisioning (creating the org/project/API key — quick
+start step 6 above) is one-time per fresh stack; see
+[`langfuse/README.md`](langfuse/README.md) for the login, the 6-chart
+dashboard, and a headless provisioning path if you don't have a browser.
 
 ```bash
-# Add keys to .env after provisioning:
-# LANGFUSE_PUBLIC_KEY=pk-lf-...
-# LANGFUSE_SECRET_KEY=sk-lf-...
-docker-compose restart app
+# After adding LANGFUSE_PUBLIC_KEY / LANGFUSE_SECRET_KEY to .env:
+docker compose restart app
 ```
+
+## Troubleshooting
+
+- **`docker compose build`/`up` fails with an I/O or snapshot error, or
+  colima won't restart cleanly**: almost always host disk pressure — colima's
+  VM disk file grows on the host filesystem and a build can't complete (or
+  can corrupt the VM) if the host is nearly full. Check
+  `df -h /System/Volumes/Data` and free space (`uv cache clean`,
+  `docker system prune`, empty the Trash) until you have **≥25GiB free**
+  before retrying. If the VM is already corrupted (e.g. `colima ssh -- ls /`
+  fails), there's no repair path — `colima delete -f` and `colima start`
+  fresh, then re-run the Quick start from step 4 (Qdrant/Langfuse data lives
+  in Docker volumes tied to that VM and is lost with it, but is fully
+  rebuildable: re-run ingestion, re-provision Langfuse).
+- **Qdrant fails to start / boot panics after a version change**: Qdrant's
+  on-disk storage format isn't always forward/backward compatible across
+  minor versions. Keep the `qdrant/qdrant` image tag in `docker-compose.yml`
+  matching the `qdrant-client` version pinned in `uv.lock` — if you bump one,
+  bump the other and wipe the `qdrant_data` volume before re-ingesting.
+- **`fastjsonschema==2.22.0` yanked-package warning on `uv sync`**: harmless,
+  registry-side metadata issue upstream in that package version — doesn't
+  affect the resolved lock.
+- **Repeated `docker compose build app` eats disk fast**: each rebuild with a
+  Dockerfile/dependency change leaves the previous layers as dangling
+  (`<none>`) images — with `torch`/CUDA wheels in the dependency tree these
+  are ~15-17GB *each*. A few rebuilds is enough to fill even an 80GiB colima
+  disk. Run `docker image prune -f` (safe — only removes untagged images, never
+  touches named volumes or the current tagged images) between rebuilds if
+  `df -h` inside the VM (`colima ssh -- df -h /`) is climbing.
 
 ## Reproducibility
 
 - **Dependencies**: `pyproject.toml` + `uv.lock` pin the exact resolution
   (285 packages); `uv sync` reproduces the environment on any machine
-  (Python 3.12 via uv).
+  (Python 3.12 via uv) — verified on both a MacBook Air and a second machine
+  during development.
 - **Services**: `docker-compose.yml` pins every image tag (Qdrant v1.18.0,
-  Langfuse v2, etc.); `docker-compose up -d --build` reproduces the full stack.
+  Langfuse v2, etc.); `docker compose up -d --build` reproduces the full stack.
 - **Dataset**: the KB is rebuilt on demand by `uv run python -m pipeline.ingest`
   (arXiv API, retry + rate-limit). Collection `arxiv_papers` currently holds
-  2176 papers.
+  ~3000 papers (arXiv is a live feed, so an exact re-ingest count will vary
+  slightly run to run).
 - **Evals**: ground-truth, retrieval, and LLM-eval results are committed as CSVs
   in `eval/`; each script is rerunnable.
 - **Env**: `.env.example` lists every required key with a comment; no secrets
@@ -165,18 +224,20 @@ docker-compose restart app
 
 ## Screenshots
 
-> **TBD — to be captured before peer review.** Placeholders below:
-
-1. Chainlit chat UI — ask a question, agent answer with cited arXiv IDs
-   (`docs/screenshots/chat.png`).
-2. Langfuse dashboard — traces / spans / feedback charts
-   (`docs/screenshots/langfuse-dashboard.png`).
-3. Sample answer — one agent turn with citations sidebar
-   (`docs/screenshots/agent-answer.png`).
+1. Chainlit chat UI, freshly loaded:
+   ![Chainlit chat UI](docs/screenshots/chat.png)
+2. Langfuse dashboard — traces, model usage, and score charts:
+   ![Langfuse dashboard](docs/screenshots/langfuse-dashboard.png)
+3. Sample answer with citations — **TBD**, pending a live query run once the
+   Hy3 weekly quota resets (`docs/screenshots/agent-answer.png`). A full live
+   answer (14 cited arXiv IDs) was already verified via the CLI agent this
+   session — see the Session 08 handoff — this screenshot just needs to be
+   recaptured through the browser.
 
 ## Status
 
-Phases 0-6 complete (scaffold, ingestion, retrieval, agent, LLM eval,
-interface, monitoring) + Phase 7 (containerization, reproducibility). See
+Phases 0-7 complete (scaffold, ingestion, retrieval, agent, LLM eval,
+interface, monitoring, containerization). The full `docker compose` stack
+(app + qdrant + self-hosted Langfuse) runs end-to-end on a fresh machine; see
 [`PROGRESS.md`](PROGRESS.md) for the phase tracker and
 [`docs/handoffs/`](docs/handoffs/) for session handoffs.

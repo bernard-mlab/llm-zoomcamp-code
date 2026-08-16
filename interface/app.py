@@ -62,13 +62,14 @@ async def main(message: cl.Message):
     await msg.update()
 
     fb = await cl.AskActionMessage(
+        content="Was this answer helpful?",
         actions=[
-            cl.Action(name="thumbs_up", value="up", label="👍 Good answer"),
-            cl.Action(name="thumbs_down", value="down", label="👎 Needs work"),
+            cl.Action(name="thumbs_up", payload={"value": "up"}, label="👍 Good answer"),
+            cl.Action(name="thumbs_down", payload={"value": "down"}, label="👎 Needs work"),
         ],
     ).send()
 
-    feedback_value = fb.get("value") if fb else None
+    feedback_value = fb.get("payload", {}).get("value") if fb else None
     if feedback_value:
         trace_id = get_last_trace_id()
         if trace_id:

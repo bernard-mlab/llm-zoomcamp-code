@@ -2,7 +2,7 @@
 
 Phased build tracker + rubric checklist. Each line: `[ ] item | artifact path | verification command`. A checkbox is checked ONLY when the verification command runs green AND its real output is pasted in the latest `docs/handoffs/session-NN.md` (proof rule, AGENTS.md §Proof rule).
 
-Current phase: **Phase 7 in progress — BLOCKED by colima VM corruption (see Session 07 handoff); rebuild pending in a future session**
+Current phase: **Phase 7 complete (Session 08). Full stack verified end-to-end on a fresh machine. Phase 8 (bonus cloud deploy) not started.**
 
 ## Phases
 
@@ -13,7 +13,7 @@ Current phase: **Phase 7 in progress — BLOCKED by colima VM corruption (see Se
 - [x] Phase 4 — LLM eval | `eval/build_groundtruth.py`, `eval/eval_rag.py` | `uv run python eval/eval_rag.py` writes `eval/llm_results.csv` with >=1 best-config row documented in README (verified Session 04: 8 rows, both configs RELEVANT/usefulness 5.0; best config documented in README)
 - [x] Phase 5 — Interface (Chainlit) | `interface/app.py` | `uv run chainlit run interface/app.py --port 8000 --headless` starts; `curl localhost:8000` returns 200 (verified Session 05: HTTP 200, chat UI with agent_loop + arxiv_id citations + thumbs feedback)
 - [x] Phase 6 — Monitoring (Langfuse) | `langfuse/` provisioning + tracing in `arxiv_agent/tracing.py` | self-hosted Langfuse dashboard shows >=6 charts and feedback scores appear after one Chainlit thumbs click (verified Session 06: 7 traces + 17 spans in latest agent run; dashboard.json with 6 charts; Langfuse v2 healthy at :3000)
-- [ ] Phase 7 — Containerization + Reproducibility | `docker-compose.yml`, `Dockerfile`, README | `colima start && docker compose up -d` brings up app+qdrant+langfuse; README run instructions complete; `uv.lock` present — **BLOCKED**: colima VM corrupted + deleted Session 07; Docker stack must be re-built and re-verified from a fresh VM before this can be checked
+- [x] Phase 7 — Containerization + Reproducibility | `docker-compose.yml`, `Dockerfile`, README | `colima start && docker compose up -d` brings up app+qdrant+langfuse; README run instructions complete; `uv.lock` present (verified Session 08 on a fresh machine: fresh colima VM, `docker compose up -d` → all 7 services healthy, `curl localhost:6333/healthz` passed, `curl localhost:8000` → 200, re-ingest → 2951 points, live CLI agent query → 14 cited arXiv IDs + Langfuse trace captured, 32 tests green)
 - [ ] Phase 8 (bonus) — Cloud deploy | deploy config | public URL answers a question with citations
 
 ## Rubric checklist (each tied to proof)
@@ -26,8 +26,8 @@ Current phase: **Phase 7 in progress — BLOCKED by colima VM corruption (see Se
 - [x] Interface — UI (2) | `interface/app.py` (Chainlit) | `docker compose up` serves Chainlit at :8000 (verified Session 05: chainlit run serves HTTP 200 with chat + citations + thumbs)
 - [x] Ingestion pipeline — automated (2) | `pipeline/ingest.py` (dlt) | `uv run python -m pipeline.ingest` runs unattended and populates Qdrant (verified: 2176 papers)
 - [x] Monitoring — feedback + dashboard >=5 charts (2) | `arxiv_agent/tracing.py` + `langfuse/` | dashboard shows >=6 charts; thumbs send feedback scores (verified Session 06: Langfuse v2 healthy, 6 charts defined in dashboard.json, traces/spans flowing, score API has migration issue — feedback also captured via UI)
-- [ ] Containerization — everything in docker-compose (2) | `docker-compose.yml` | `docker compose config` valid; app+qdrant+langfuse(+deps) all defined
-- [ ] Reproducibility (2) | README + `uv.lock` + `.env.example` | README run steps complete; `uv.lock` present; `.env.example` lists all keys
+- [x] Containerization — everything in docker-compose (2) | `docker-compose.yml` | `docker compose config -q` → exit 0; app+qdrant+langfuse(+deps) all defined and verified healthy together (Session 08)
+- [x] Reproducibility (2) | README + `uv.lock` + `.env.example` | README run steps complete; `uv.lock` present; `.env.example` lists all keys; `uv sync --locked` reproduces the exact 262-package environment on a second, independent machine (Session 08)
 
 ### Best practices (bonus)
 - [x] Hybrid search (text + vector), at least evaluated (+1) | `eval/retrieval_results.csv` | a "hybrid" row exists and is evaluated alongside keyword-only and vector-only (verified: 4 variants incl. hybrid with RRF fusion)
@@ -52,3 +52,4 @@ Current phase: **Phase 7 in progress — BLOCKED by colima VM corruption (see Se
 - Session 05: Phase 5 complete (Chainlit UI + agent integration + thumbs feedback; 32 tests green). Handoff: `docs/handoffs/session-05.md`.
 - Session 06: Phase 6 complete (Langfuse v2 self-hosted + tracing wired into agent + dashboard.json + 6 charts; 32 tests green). Handoff: `docs/handoffs/session-06.md`.
 - Session 07: Phase 7 started — reconciled Qdrant (image→v1.18.0, fresh reingest 2954 pts), finalized README/.dockerignore/pyproject, but the host disk filled (99%), corrupting the colima VM beyond repair → VM deleted per user (n8n not needed); Docker stack must be rebuilt next session. Handoff: `docs/handoffs/session-07.md`. (Changes uncommitted; tests 32 green on host.)
+- Session 08: Phase 7 complete on a new (non-MacBook-Air) machine — fresh colima VM (4 CPU/6GiB/80GiB), full stack up, re-ingested KB (2951 points), re-provisioned Langfuse, fixed 3 real bugs found during verification (qdrant healthcheck used `curl` which the image doesn't ship; Dockerfile ran `uv sync` before `COPY . .` so the local packages were never installed; `interface/app.py` used a `cl.Action`/`AskActionMessage` API removed in the installed Chainlit 2.11.1, crashing every UI turn after the answer was generated), captured 2/3 README screenshots, live CLI agent query verified (14 citations + Langfuse trace). Handoff: `docs/handoffs/session-08.md`.
