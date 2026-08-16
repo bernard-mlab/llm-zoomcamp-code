@@ -1,0 +1,42 @@
+PROGRESS.md
+  s_c85b564d1690ed::t_f395280c0b37dd 16
+  s_c85b564d1690ed::t_66f3cd0a857afc 54-55
+  s_c85b564d1690ed::t_8f93f0d3c26e04 5
+  s_c85b564d1690ed::t_a9c999b617da13 29-30
+README.md
+  s_c85b564d1690ed::t_80ecd5961232aa 227-235,239-241
+  s_c85b564d1690ed::t_86da4c1bfcc8f9 198-204
+  s_c85b564d1690ed::t_665b894e3db056 67-69,71,75-76,78-81,86-97,101-105
+  s_c85b564d1690ed::t_30a60ed6d05ed5 165,167-170,173-174,177-197,205,210-211,213,216-217
+  s_c85b564d1690ed::t_62c66f0b92f6ab 36-48
+interface/app.py
+  s_c85b564d1690ed::t_dc500199f8124b 65,67-68,72
+langfuse/README.md
+  s_c85b564d1690ed::t_b63fff58dede02 7-12,19
+  s_c85b564d1690ed::t_d2b8b5357d24d1 13-18,20-31
+  s_c85b564d1690ed::t_d3dbdc8173c140 60-61
+Dockerfile
+  s_c85b564d1690ed::t_ccdd05e7f40838 11,14,17
+docker-compose.yml
+  s_c85b564d1690ed::t_aac7f045915748 15-17
+  s_c85b564d1690ed::t_db7fde3a7af24f 2-4
+  s_c85b564d1690ed::t_a9d9c8c34da499 156,170
+docs/handoffs/session-08.md
+  s_c85b564d1690ed::t_0964e7d10ef5c4 1-174
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "d6e9e3b493467fb7b160da1dc173d6f2c2524701",
+  "prompts": {},
+  "sessions": {
+    "s_c85b564d1690ed": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9e0fbf64-5ab7-4920-baa5-9260db36f0d5",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "Bernard Yeo <bernardyeo001@gmail.com>"
+    }
+  }
+}
