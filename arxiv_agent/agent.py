@@ -1,7 +1,7 @@
 """Handwritten agent loop (Module-1 style, generalized to a 3-tool registry).
 
-Phase 3. Uses native function-calling (ADR-01 confirmed Hy3 supports it).
-See spec §5 and AGENTS.md (Hy3 capability rule).
+Phase 3. Uses native function-calling (capability-probed: Hy3 supports it).
+See the design spec §5.
 
 Phase 6: adds Langfuse tracing spans per iteration + tool call.
 """

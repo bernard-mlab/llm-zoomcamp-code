@@ -7,7 +7,7 @@ arXiv metadata, and answers with **cited arXiv IDs**.
 
 > LLM Zoomcamp final project. See
 > [`docs/superpowers/specs/2026-07-26-arxiv-agent-design.md`](docs/superpowers/specs/2026-07-26-arxiv-agent-design.md)
-> for the full design and [`PROGRESS.md`](PROGRESS.md) for the build tracker.
+> for the full design rationale.
 
 ## Problem
 
@@ -17,11 +17,36 @@ and even RAG systems often fail to *cite what they used*. This project builds
 an agentic RAG system over arXiv that decides when and how to search, cites its
 sources, and exposes a chat interface with monitoring and evaluation.
 
+## Evaluation criteria
+
+Mapping of this submission to the [LLM Zoomcamp grading
+rubric](https://github.com/DataTalksClub/llm-zoomcamp/blob/main/project.md).
+Every core criterion and best-practice bonus targets full marks; the
+cloud-deployment bonus was not attempted.
+
+| Criterion | What we did |
+|---|---|
+| **Problem description** | See [Problem](#problem) above. |
+| **Retrieval flow** (KB + LLM, not LLM-only) | The [agent](#stack) calls the Qdrant knowledge base (`search_papers` tool) *and* the LLM on every turn — never answers from parametric knowledge alone. |
+| **Retrieval evaluation** | 5 retrieval variants evaluated head-to-head (keyword / vector / hybrid / hybrid+rerank / hybrid+rerank+rewrite); best (`hybrid_rerank`) is used in production. See [Retrieval evaluation](#retrieval-evaluation). |
+| **LLM evaluation** | 2 prompt variants compared with an LLM-as-judge (relevance + usefulness); best documented. See [LLM evaluation](#llm-evaluation). |
+| **Interface** | A Chainlit **web chat UI** (not just a CLI) with streamed answers, a citations sidebar, and thumbs feedback. See [Interface](#interface). |
+| **Ingestion pipeline** | Fully **automated** with `dlt` (incremental state, rate-limiting, retry with backoff) — not a one-off notebook. See [Ingestion pipeline](#ingestion-pipeline). |
+| **Monitoring** | Self-hosted Langfuse: user feedback (thumbs) **and** a 6-chart dashboard. See [Langfuse monitoring](#langfuse-monitoring-one-time-setup). |
+| **Containerization** | **Everything** — app, Qdrant, and self-hosted Langfuse (+ its Postgres/ClickHouse/Redis/MinIO deps) — in one `docker-compose.yml`. See [Containerization](#containerization). |
+| **Reproducibility** | Pinned dependency lockfile, pinned image tags, a documented one-command stack, verified end-to-end on two independent machines. See [Reproducibility](#reproducibility). |
+| **Best practice: hybrid search** (+1) | Evaluated explicitly as its own row (`hybrid`, RRF fusion of sparse + dense) — [Retrieval evaluation](#retrieval-evaluation). |
+| **Best practice: document re-ranking** (+1) | Cross-encoder reranker; `hybrid_rerank` is the best-scoring and production variant — [Retrieval evaluation](#retrieval-evaluation). |
+| **Best practice: query rewriting** (+1) | A `rewrite_query` tool is wired into the agent and evaluated as its own `hybrid_rerank_rewrite` row — [Retrieval evaluation](#retrieval-evaluation). |
+| **Bonus: cloud deployment** (+2) | Not attempted — this submission runs locally via `docker compose`. |
+
 ## Stack
 
-- **LLM**: `Hy3` via an OpenAI-compatible proxy (opencode-go), env-swappable,
-  native function-calling (verified, see
-  [`ADR-01`](docs/decisions/ADR-01-hy3-tool-calling.md)).
+- **LLM**: `Hy3` via an OpenAI-compatible proxy (opencode-go), env-swappable.
+  Native function-calling support was verified with a capability probe
+  (`uv run python -m arxiv_agent.capability_probe` → `tool_calling=yes`)
+  before committing to a native tool-calling agent loop over an
+  instruction-based fallback.
 - **Knowledge base**: Qdrant with native hybrid (sparse SPLADE + dense
   bge-small) and RRF fusion, plus a cross-encoder reranker.
 - **Ingestion**: dlt pulling the arXiv API (incremental state, rate-limited,
@@ -58,7 +83,7 @@ langfuse/               provisioning script, dashboard.json, setup notes
 tests/                  32 pytest tests (agent, tools, KB, ingest, interface)
 docker-compose.yml      full stack (app, qdrant, langfuse + deps, ingest profile)
 Dockerfile              app image (uv-synced, dev deps excluded)
-docs/                   spec, plan, handoffs, ADRs, PROGRESS tracker
+docs/                   design spec + screenshots
 ```
 
 ## Quick start (macOS / colima)
@@ -103,6 +128,53 @@ open http://localhost:8000
 > Desktop / colima. The legacy standalone `docker-compose` binary works
 > identically against the same `docker-compose.yml` if that's what you have
 > installed.
+
+## Containerization
+
+Everything the app needs is defined in one [`docker-compose.yml`](docker-compose.yml)
+— no external managed services, no "install Postgres separately" steps:
+
+- **`app`** — the Chainlit UI (built from [`Dockerfile`](Dockerfile))
+- **`qdrant`** — the vector/hybrid-search knowledge base
+- **`langfuse-web`** / **`langfuse-worker`** — self-hosted monitoring, plus
+  its own dependencies (**`postgres-langfuse`**, **`clickhouse`**,
+  **`redis`**, **`minio`**), all defined in the same compose file
+- **`ingest`** — a one-off profile (`--profile ingest`) for running the
+  ingestion pipeline inside a container instead of via `uv run`
+
+`docker compose up -d` brings up the entire stack; `docker compose config -q`
+validates the file. Nothing runs outside docker-compose except the one-time
+`uv sync` for local (non-container) development/testing.
+
+## Ingestion pipeline
+
+[`pipeline/ingest.py`](pipeline/ingest.py) runs a fully automated
+[`dlt`](https://dlthub.com/) pipeline (not a manual notebook step):
+[`pipeline/sources/arxiv.py`](pipeline/sources/arxiv.py) pages through the
+arXiv Atom API for the configured categories (`ARXIV_CATEGORIES`,
+`ARXIV_MAX_RESULTS`), tracks incremental state so re-runs only fetch new
+papers, and retries transient failures (arXiv occasionally returns a 503)
+with exponential backoff. Each paper is embedded (dense `bge-small` +
+native Qdrant sparse vectors) and upserted into the `arxiv_papers` collection.
+
+```bash
+uv run python -m pipeline.ingest        # local run
+docker compose --profile ingest run --rm ingest   # containerized run
+```
+
+## Interface
+
+[`interface/app.py`](interface/app.py) is a [Chainlit](https://chainlit.io)
+**web chat UI** — not just a CLI — served at `http://localhost:8000`:
+
+- Ask a free-form question; the agent streams its tool-calling steps
+  (`Used agent_loop`) and then the final cited answer
+- Cited `[arxiv:xxxx.xxxxx]` IDs get a clickable sidebar with the paper's
+  title/abstract and a link to arXiv
+- A "Was this answer helpful?" thumbs up/down prompt sends a score straight
+  to the Langfuse trace for that turn (see [Monitoring](#langfuse-monitoring-one-time-setup))
+
+See the [Screenshots](#screenshots) section below for what this looks like.
 
 ## Evaluation
 
@@ -246,8 +318,10 @@ docker compose restart app
 
 ## Status
 
-Phases 0-7 complete (scaffold, ingestion, retrieval, agent, LLM eval,
-interface, monitoring, containerization). The full `docker compose` stack
-(app + qdrant + self-hosted Langfuse) runs end-to-end on a fresh machine; see
-[`PROGRESS.md`](PROGRESS.md) for the phase tracker and
-[`docs/handoffs/`](docs/handoffs/) for session handoffs.
+Feature-complete: ingestion, hybrid retrieval + reranking + query rewriting,
+an agentic tool-calling loop, an LLM- and retrieval-evaluated pipeline, a
+Chainlit web UI, self-hosted Langfuse monitoring, and full containerization
+have all been implemented and verified end-to-end (including a live rebuild
+and re-verification on a second, independent machine — see
+[Reproducibility](#reproducibility)). Cloud deployment (bonus) was not
+attempted in this submission.

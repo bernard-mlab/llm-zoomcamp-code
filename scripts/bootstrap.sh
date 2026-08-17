@@ -164,9 +164,7 @@ summary() {
     Langfuse         : http://localhost:3000  (login admin@arxiv-agent.local / adminadmin123!)
   Remaining manual items (if not done):
     - Add Langfuse API keys to .env (LANGFUSE_PUBLIC_KEY / LANGFUSE_SECRET_KEY), then ./scripts/bootstrap.sh app
-    - Capture screenshots into docs/screenshots/ (README has placeholders)
-    - Mark Phase 7 + Reproducibility done in PROGRESS.md with proof, then git commit + push
-  See docs/setup/m3-rebuild.md for the full runbook.
+    - Capture screenshots into docs/screenshots/ (see README's Screenshots section)
 SUM
 }
 

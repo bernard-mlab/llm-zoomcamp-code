@@ -1,7 +1,7 @@
 """Langfuse tracing helpers. Phase 6.
 
 Every user turn = a Langfuse trace; child spans per agent iteration,
-search/llm/fetch call. See spec §8 and AGENTS.md.
+search/llm/fetch call. See the design spec §8.
 
 Uses Langfuse SDK v2 (matches self-hosted Langfuse v2 server).
 """

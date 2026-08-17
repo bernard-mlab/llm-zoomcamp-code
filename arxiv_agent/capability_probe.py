@@ -1,8 +1,7 @@
 """capability_probe — detect Hy3 tool-calling support via the opencode-go proxy.
 
-Run first in every session that touches the agent (see AGENTS.md Hy3 rule).
-Records tool_calling = yes | no | partial and the supporting evidence, which
-ADR-01 cites. Never assume — always probe.
+Run before assuming Hy3 supports native tool-calling — never assume, always
+probe. Records tool_calling = yes | no | partial plus the supporting evidence.
 """
 from __future__ import annotations
 
