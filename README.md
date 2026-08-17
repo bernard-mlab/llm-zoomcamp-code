@@ -6,7 +6,7 @@ vector) knowledge base, rewrites queries, re-ranks, optionally fetches fresh
 arXiv metadata, and answers with **cited arXiv IDs**.
 
 > LLM Zoomcamp final project. See
-> [`docs/superpowers/specs/2026-07-26-arxiv-agent-design.md`](docs/superpowers/specs/2026-07-26-arxiv-agent-design.md)
+> [`arxiv-agent-design.md`](docs/superpowers/specs/2026-07-26-arxiv-agent-design.md)
 > for the full design rationale.
 
 ## Problem
