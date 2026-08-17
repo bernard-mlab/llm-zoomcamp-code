@@ -1,0 +1,32 @@
+arxiv_agent/tracing.py
+  s_c85b564d1690ed::t_b0ab5b2060e897 4
+arxiv_agent/capability_probe.py
+  s_c85b564d1690ed::t_753dc5cd464867 3-4
+arxiv_agent/agent.py
+  s_c85b564d1690ed::t_7eba27f4bcdf7d 3-4
+README.md
+  s_c85b564d1690ed::t_cf8888ec7aede2 10
+  s_c85b564d1690ed::t_a5eb7cad45d549 20-42
+  s_c85b564d1690ed::t_2acaf44dd9ff81 45-49
+  s_c85b564d1690ed::t_8cd335df4f1a0d 86
+  s_c85b564d1690ed::t_915f178ad67437 132-178
+  s_c85b564d1690ed::t_3affe6dc3b1667 321-327
+scripts/bootstrap.sh
+  s_c85b564d1690ed::t_be7ab44f64dcb5 167
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "e44854faf10204574ea347b9fa05ef58787532b7",
+  "prompts": {},
+  "sessions": {
+    "s_c85b564d1690ed": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9e0fbf64-5ab7-4920-baa5-9260db36f0d5",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "Bernard Yeo <bernardyeo001@gmail.com>"
+    }
+  }
+}
