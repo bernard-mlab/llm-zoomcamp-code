@@ -96,12 +96,19 @@ colima start --cpu 4 --memory 6 --disk 80
 # 2. Configure environment (fill in OPENCODE_GO_API_KEY; Langfuse keys added in step 6)
 cp .env.example .env
 
+# 2b. Generate Langfuse self-host crypto material (one-time per fresh stack;
+#     do NOT regenerate these on a stack you already provisioned - it
+#     invalidates the API keys added in step 6)
+for k in NEXTAUTH_SECRET ENCRYPTION_KEY SALT; do
+  echo "$k=$(openssl rand -hex 32)" >> .env
+done
+
 # 3. Install dependencies (Python 3.12; uv manages the venv)
 uv sync --locked
 uv run pytest tests/ -v                # -> 32 passed
 
 # 4. Bring up Qdrant + Langfuse first (app needs Langfuse reachable to start)
-docker compose up -d qdrant langfuse-web
+docker compose up -d qdrant langfuse-web langfuse-worker
 curl -s http://localhost:6333/healthz  # -> healthz check passed
 curl -s -o /dev/null -w '%{http_code}\n' http://localhost:3000  # -> 200
 
@@ -122,6 +129,11 @@ curl -s -o /dev/null -w '%{http_code}\n' http://localhost:8000   # -> 200
 # 8. Open the chat UI
 open http://localhost:8000
 ```
+
+> **Scripted alternative**: [`scripts/bootstrap.sh`](scripts/bootstrap.sh) runs
+> the same steps end-to-end (`./scripts/bootstrap.sh all`), or one stage at a
+> time (`./scripts/bootstrap.sh services`, `./scripts/bootstrap.sh ingest`, ...)
+> — useful for re-running a single stage after a failure.
 
 > **`docker compose` vs `docker-compose`**: the compose v2 plugin (`docker
 > compose`, no hyphen) is used above and is what ships with current Docker
@@ -152,10 +164,14 @@ validates the file. Nothing runs outside docker-compose except the one-time
 [`dlt`](https://dlthub.com/) pipeline (not a manual notebook step):
 [`pipeline/sources/arxiv.py`](pipeline/sources/arxiv.py) pages through the
 arXiv Atom API for the configured categories (`ARXIV_CATEGORIES`,
-`ARXIV_MAX_RESULTS`), tracks incremental state so re-runs only fetch new
-papers, and retries transient failures (arXiv occasionally returns a 503)
-with exponential backoff. Each paper is embedded (dense `bge-small` +
-native Qdrant sparse vectors) and upserted into the `arxiv_papers` collection.
+`ARXIV_MAX_RESULTS`) and retries transient failures (arXiv occasionally
+returns a 503) with exponential backoff. Each paper is embedded (dense
+`bge-small` + native Qdrant sparse vectors) and upserted into the
+`arxiv_papers` collection keyed by a UUID5 derived from the arXiv ID
+([`arxiv_agent/kb.py`](arxiv_agent/kb.py)), so re-running ingestion overwrites
+existing points instead of duplicating them — idempotency comes from this
+deterministic ID scheme, not from dlt's incremental-state tracking (each run
+still pages the arXiv API from the start).
 
 ```bash
 uv run python -m pipeline.ingest        # local run

@@ -25,7 +25,7 @@ class Settings:
 
     # Embed / rerank
     embed_model: str = os.getenv("EMBED_MODEL", "BAAI/bge-small-en-v1.5")
-    rerank_model: str = os.getenv("RERANK_MODEL", "Xenova/ms-marco-MiniLM-L-6-v2")
+    rerank_model: str = os.getenv("RERANK_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2")
 
     # arxiv ingest
     arxiv_max_results: int = int(os.getenv("ARXIV_MAX_RESULTS", "3000"))

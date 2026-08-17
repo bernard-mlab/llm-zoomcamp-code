@@ -78,7 +78,7 @@ wait_http() {
 services() {
   say "SERVICES" "bring up Qdrant + Langfuse stack"
   [[ ${#COMPOSE[@]} -gt 0 ]] || { fail "no compose command"; return 1; }
-  "${COMPOSE[@]}" up -d qdrant langfuse-web >/dev/null 2>&1 || { fail "compose up failed"; return 1; }
+  "${COMPOSE[@]}" up -d qdrant langfuse-web langfuse-worker >/dev/null 2>&1 || { fail "compose up failed"; return 1; }
   say "SERVICES" "waiting for Qdrant :6333 (up to ~3min)"
   wait_http http://localhost:6333/healthz 36 && ok "qdrant healthz" || { fail "qdrant not healthy"; return 1; }
   say "SERVICES" "waiting for Langfuse :3000 (up to ~5min)"

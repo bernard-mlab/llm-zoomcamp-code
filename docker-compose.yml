@@ -96,7 +96,7 @@ services:
       CLICKHOUSE_PASSWORD: clickhouse
       REDIS_URL: redis://redis:6379
       NEXTAUTH_URL: http://localhost:3000
-      NEXTAUTH_SECRET: 8237fe92aa7671a9b58aec5d6ff7f628c4ab4a3f7b129d544ed7cde68da7c139
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?set in .env}
       LANGFUSE_S3_MEDIA_UPLOAD_ENABLED: "true"
       LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT: http://minio:9000
       LANGFUSE_S3_MEDIA_UPLOAD_REGION: us-east-1
@@ -106,8 +106,8 @@ services:
       AWS_SECRET_ACCESS_KEY: minio-minio
       AWS_REGION: us-east-1
       LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES: "true"
-      ENCRYPTION_KEY: 2ef6564bb738c80b666a1cd6783f24b5d2c6a958ea8072f68b39119aef143968
-      SALT: bb70cbd041b5f1cb9ad23112d1dc6b8240a5c61460f1ed347fa795753e776ae3
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?set in .env}
+      SALT: ${SALT:?set in .env}
 
   langfuse-worker:
     image: langfuse/langfuse:2
@@ -127,6 +127,8 @@ services:
       CLICKHOUSE_USER: clickhouse
       CLICKHOUSE_PASSWORD: clickhouse
       REDIS_URL: redis://redis:6379
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?set in .env}
       LANGFUSE_S3_MEDIA_UPLOAD_ENABLED: "true"
       LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT: http://minio:9000
       LANGFUSE_S3_MEDIA_UPLOAD_REGION: us-east-1
@@ -134,8 +136,8 @@ services:
       AWS_ACCESS_KEY_ID: minio
       AWS_SECRET_ACCESS_KEY: minio-minio
       AWS_REGION: us-east-1
-      ENCRYPTION_KEY: 2ef6564bb738c80b666a1cd6783f24b5d2c6a958ea8072f68b39119aef143968
-      SALT: bb70cbd041b5f1cb9ad23112d1dc6b8240a5c61460f1ed347fa795753e776ae3
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?set in .env}
+      SALT: ${SALT:?set in .env}
 
   app:
     build:

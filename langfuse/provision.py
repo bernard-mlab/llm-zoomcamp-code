@@ -1,11 +1,13 @@
-"""Langfuse provisioning: create a project, get API keys, set up dashboard.
+"""Langfuse provisioning: create the first user, then guide key setup.
 
 Phase 6. Run: `uv run python langfuse/provision.py`.
 
-Creates a Langfuse project via the web UI signup flow (first user becomes admin),
-then prints the public/secret keys. For self-hosted Langfuse v2, the first user
-signs up via the web UI at http://localhost:3000 — we create that user and
-project via the API.
+Self-hosted Langfuse v2 exposes no public API to create an org/project/API-key
+(only the onboarding wizard in the browser does that). This script automates
+just the first step — creating the admin user via `POST /api/auth/signup` —
+and then prints the remaining manual steps. See `langfuse/README.md` for the
+full headless (no-browser) provisioning path, including the documented direct
+SQL alternative for org/project/API-key creation.
 """
 from __future__ import annotations
 
@@ -32,33 +34,18 @@ def wait_for_langfuse(timeout: int = 60) -> bool:
 
 def signup_first_user():
     r = requests.post(
-        f"{LANGFUSE_HOST}/api/public/registration/setup",
+        f"{LANGFUSE_HOST}/api/auth/signup",
         json={
+            "name": "Admin User",
             "email": "admin@arxiv-agent.local",
             "password": "adminadmin123!",
-            "name": "Admin User",
-            "organizationName": "arXiv Research",
-            "organizationPlan": "PRO",
-            "projectName": "arxiv-agent",
         },
         timeout=10,
     )
     if r.status_code == 200:
         return r.json()
-    print(f"Setup response ({r.status_code}): {r.text[:300]}")
+    print(f"Signup response ({r.status_code}): {r.text[:300]}")
     return None
-
-
-def get_project_keys(session: requests.Session):
-    r = session.get(f"{LANGFUSE_HOST}/api/public/projects", timeout=10)
-    if r.status_code != 200:
-        print(f"Failed to get projects ({r.status_code}): {r.text[:300]}")
-        return None
-    projects = r.json()
-    if not projects:
-        print("No projects found")
-        return None
-    return projects[0]
 
 
 def main() -> int:
@@ -68,24 +55,27 @@ def main() -> int:
         return 1
     print("Langfuse is healthy.")
 
-    print("Setting up first user + project...")
+    print("Creating first user...")
     result = signup_first_user()
     if result:
-        print(f"Setup OK: {result}")
+        print(f"Signup OK: {result}")
     else:
-        print("Setup may already be done (expected if re-running).")
+        print("Signup may already be done (expected if re-running), or the "
+              "org/project must be created first via the browser wizard.")
 
     print()
-    print("To get API keys:")
-    print("1. Open http://localhost:3000 in your browser")
+    print("Self-hosted Langfuse v2 has no public API to create an org/project/")
+    print("API-key — only the browser wizard does that (or the SQL path in")
+    print("langfuse/README.md for headless setups). To finish provisioning:")
+    print("1. Open http://localhost:3000/auth/sign-up in your browser")
     print("2. Login: admin@arxiv-agent.local / adminadmin123!")
-    print("3. Go to Settings → API Keys")
-    print("4. Copy the public and secret keys")
+    print("3. Follow the onboarding wizard to create an org + project")
+    print("4. Go to Settings → API Keys, generate a key pair")
     print("5. Add them to .env:")
     print("   LANGFUSE_PUBLIC_KEY=pk-lf-...")
     print("   LANGFUSE_SECRET_KEY=sk-lf-...")
     print()
-    print("Then restart the app: docker-compose restart app")
+    print("Then restart the app: docker compose restart app")
 
     return 0
 

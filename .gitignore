@@ -1,7 +1,12 @@
 .venv/
 __pycache__/
 *.pyc
-.env
+.env*
+!.env.example
+*.pem
+*.key
+*.p12
+.serena/
 .DS_Store
 .ipynb_checkpoints/
 *.egg-info/
