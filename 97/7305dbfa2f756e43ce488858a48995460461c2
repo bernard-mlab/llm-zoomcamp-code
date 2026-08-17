@@ -1,0 +1,38 @@
+.env.example
+  s_e310f0dc687531::t_cd3198573421f4 24-32
+docker-compose.yml
+  s_e310f0dc687531::t_40e9817cd768c2 109-110
+  s_e310f0dc687531::t_d096f76758f4d6 99
+  s_e310f0dc687531::t_36e6974a82ad74 130-131
+  s_e310f0dc687531::t_9d99a47087625c 139-140
+README.md
+  s_e310f0dc687531::t_ed141e34b8ca2d 171-174
+  s_e310f0dc687531::t_73856d98666435 99-105,111
+  s_e310f0dc687531::t_010d22228693c5 133-137
+  s_e310f0dc687531::t_16f75a9f9e1429 167-170
+arxiv_agent/config.py
+  s_e310f0dc687531::t_a75c8de65902ec 28
+scripts/bootstrap.sh
+  s_e310f0dc687531::t_adede6a750df8e 81
+.gitignore
+  s_e310f0dc687531::t_23e5e2fbdf6669 4-9
+langfuse/provision.py
+  s_e310f0dc687531::t_ca5b00043e5910 37,39,47,58,61,63-64,67-70,72-73,78
+  s_e310f0dc687531::t_1185fcb5cfcd7d 1,5-10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "977305dbfa2f756e43ce488858a48995460461c2",
+  "prompts": {},
+  "sessions": {
+    "s_e310f0dc687531": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "11f5e233-b61a-49f4-82a3-80f99fce23e0",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "Bernard Yeo <bernardyeo001@gmail.com>"
+    }
+  }
+}
