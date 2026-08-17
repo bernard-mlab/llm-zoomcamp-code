@@ -2,7 +2,7 @@
 
 Phased build tracker + rubric checklist. Each line: `[ ] item | artifact path | verification command`. A checkbox is checked ONLY when the verification command runs green AND its real output is pasted in the latest `docs/handoffs/session-NN.md` (proof rule, AGENTS.md §Proof rule).
 
-Current phase: **Phase 7 complete (Session 08). Full stack verified end-to-end on a fresh machine. Phase 8 (bonus cloud deploy) not started.**
+Current phase: **Phase 7 complete (Sessions 08-09). Full stack verified end-to-end on a fresh machine, all 3 README screenshots captured. Phase 8 (bonus cloud deploy) not started.**
 
 ## Phases
 
@@ -53,3 +53,4 @@ Current phase: **Phase 7 complete (Session 08). Full stack verified end-to-end o
 - Session 06: Phase 6 complete (Langfuse v2 self-hosted + tracing wired into agent + dashboard.json + 6 charts; 32 tests green). Handoff: `docs/handoffs/session-06.md`.
 - Session 07: Phase 7 started — reconciled Qdrant (image→v1.18.0, fresh reingest 2954 pts), finalized README/.dockerignore/pyproject, but the host disk filled (99%), corrupting the colima VM beyond repair → VM deleted per user (n8n not needed); Docker stack must be rebuilt next session. Handoff: `docs/handoffs/session-07.md`. (Changes uncommitted; tests 32 green on host.)
 - Session 08: Phase 7 complete on a new (non-MacBook-Air) machine — fresh colima VM (4 CPU/6GiB/80GiB), full stack up, re-ingested KB (2951 points), re-provisioned Langfuse, fixed 3 real bugs found during verification (qdrant healthcheck used `curl` which the image doesn't ship; Dockerfile ran `uv sync` before `COPY . .` so the local packages were never installed; `interface/app.py` used a `cl.Action`/`AskActionMessage` API removed in the installed Chainlit 2.11.1, crashing every UI turn after the answer was generated), captured 2/3 README screenshots, live CLI agent query verified (14 citations + Langfuse trace). Handoff: `docs/handoffs/session-08.md`.
+- Session 09: final live end-to-end run after the Hy3 weekly quota reset. Found and fixed 2 more real bugs surfaced by a live browser query hanging indefinitely (0% CPU, no logs, no error): `interface/app.py` called the synchronous `agent_loop()` directly inside an `async` handler instead of via `cl.make_async(...)`, and `arxiv_agent/tools/fetch.py`'s `requests.get()` had no `timeout` (a stalled `export.arxiv.org` response, called once per citation in a loop with a bare `except: pass`, could hang forever with no visible error). Both fixed and rebuilt; live query then completed in 173.8s with a full cited answer, working thumbs-up/down feedback prompt, and a captured Langfuse trace. Captured the final 3rd screenshot (`agent-answer.png`). 32 tests green. Handoff: `docs/handoffs/session-09.md`.

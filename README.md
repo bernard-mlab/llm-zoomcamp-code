@@ -195,6 +195,19 @@ docker compose restart app
 - **`fastjsonschema==2.22.0` yanked-package warning on `uv sync`**: harmless,
   registry-side metadata issue upstream in that package version — doesn't
   affect the resolved lock.
+- **Chat UI hangs forever on "Used agent_loop" with no answer, no error, and
+  ~0% app CPU**: this was a real bug (fixed), not expected behavior — noting
+  it in case a similar regression reappears. Two contributing issues: (1)
+  `interface/app.py` called the synchronous `agent_loop()` directly inside an
+  `async def` handler, blocking Chainlit's event loop for the call's full
+  duration instead of running it via `cl.make_async(...)`; (2)
+  `arxiv_agent/tools/fetch.py`'s `requests.get()` had no `timeout`, so a single
+  slow/stalled response from `export.arxiv.org` (called once per cited arXiv
+  ID, in a loop, wrapped in a bare `except Exception: pass`) could hang the
+  whole request indefinitely with no visible error. Both are fixed
+  (`cl.make_async(agent_loop)` + `timeout=15` on the fetch call) — flagging
+  the symptom here since a hang with zero logging is otherwise very hard to
+  diagnose.
 - **Repeated `docker compose build app` eats disk fast**: each rebuild with a
   Dockerfile/dependency change leaves the previous layers as dangling
   (`<none>`) images — with `torch`/CUDA wheels in the dependency tree these
@@ -228,11 +241,8 @@ docker compose restart app
    ![Chainlit chat UI](docs/screenshots/chat.png)
 2. Langfuse dashboard — traces, model usage, and score charts:
    ![Langfuse dashboard](docs/screenshots/langfuse-dashboard.png)
-3. Sample answer with citations — **TBD**, pending a live query run once the
-   Hy3 weekly quota resets (`docs/screenshots/agent-answer.png`). A full live
-   answer (14 cited arXiv IDs) was already verified via the CLI agent this
-   session — see the Session 08 handoff — this screenshot just needs to be
-   recaptured through the browser.
+3. Sample answer with citations, plus the citation sidebar:
+   ![Sample cited answer](docs/screenshots/agent-answer.png)
 
 ## Status
 

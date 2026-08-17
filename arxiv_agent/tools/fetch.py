@@ -28,7 +28,7 @@ FETCH_TOOL_SCHEMA = {
 
 def fetch_arxiv(arxiv_id: str) -> dict | None:
     params = {"id_list": arxiv_id, "max_results": 1}
-    response = requests.get(ARXIV_ID_LOOKUP_URL, params=params)
+    response = requests.get(ARXIV_ID_LOOKUP_URL, params=params, timeout=15)
     response.raise_for_status()
 
     papers = parse_atom(response.text)

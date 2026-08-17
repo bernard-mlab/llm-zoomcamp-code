@@ -31,7 +31,7 @@ async def main(message: cl.Message):
 
     async with cl.Step(name="agent_loop", type="run") as step:
         step.language = "markdown"
-        answer = agent_loop(question)
+        answer = await cl.make_async(agent_loop)(question)
         step.output = answer
 
     cited_ids = ARXIV_ID_PATTERN.findall(answer)
