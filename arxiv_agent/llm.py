@@ -13,7 +13,9 @@ def get_client() -> OpenAI:
         raise RuntimeError(
             "LLM not configured: set OPENCODE_GO_API_KEY and OPENCODE_GO_BASE_URL in .env"
         )
-    return OpenAI(api_key=settings.llm_api_key, base_url=settings.llm_base_url)
+    # openai's default read timeout is 600s — a stalled opencode-go proxy response
+    # can otherwise hang a request for up to 10 minutes with no visible error.
+    return OpenAI(api_key=settings.llm_api_key, base_url=settings.llm_base_url, timeout=90.0)
 
 
 def chat(
