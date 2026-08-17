@@ -1,0 +1,19 @@
+arxiv_agent/llm.py
+  s_c85b564d1690ed::t_47274767606797 16-18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "c06e1b784f9f7565417a14cbcecacf20e10076e9",
+  "prompts": {},
+  "sessions": {
+    "s_c85b564d1690ed": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9e0fbf64-5ab7-4920-baa5-9260db36f0d5",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "Bernard Yeo <bernardyeo001@gmail.com>"
+    }
+  }
+}
